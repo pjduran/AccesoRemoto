@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Acceso Remoto 1.5</string>
+    <string name="respuesta">La respuesta del PHP es:  </string>
+</resources>
