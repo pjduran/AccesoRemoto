@@ -20,6 +20,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private String registro="";
     private String nombrePhp="";
     public static String respuestaPhp="";
+    public static String formateada = "";
     public TextView t;
 
     @Override
@@ -43,15 +44,53 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private void BajoDatosActuales (String serie){
         nombrePhp = "bajoDatosActuales.php";
         registro = "dato="+serie;
+        String lectura = "";
+
+        String fechaInst;
+        String hora;
+        String carga;
+        String caudal;
+        String volts;
+        //String tab;
         t = (TextView) findViewById(R.id.textView1);
         String respu = GetPhp(registro,nombrePhp);
-
+        Character tab=9;
+        //tab = getString(R.string.tab);
         //String nombreAplicacion = getResources().getString(R.string.app_name);
-        String res = getResources().getString(R.string.respuesta);
-        res += respuestaPhp;
-        System.out.println(res);
+        //lectura = getResources().getString(R.string.respuesta);
+        //lectura += respuestaPhp;
+        System.out.println(lectura);
         //System.out.println(respuestaPhp);
-        t.setText(respuestaPhp);
+        if (respuestaPhp.length() > 15) {
+//            formateada = lectura + "\n";
+            formateada = "";
+            //fechaInst=respuestaPhp.substring(0, 17);
+            fechaInst=respuestaPhp.substring(0, 8);
+            //p4.jLabFechaHora.setText(fechaInst);
+            //p4.jTxtSerieEquipo.setText(serieEquipo);
+
+            formateada += "\nFecha:" +tab + tab +tab + fechaInst + "\n"; //obtengo la fecha
+            hora = respuestaPhp.substring(9, 14);
+            formateada += "Hora:" +tab +tab + tab + tab + tab + hora + "\n"; //obtengo la hora
+            int posIni = respuestaPhp.indexOf(124, 18);
+            carga = respuestaPhp.substring(18, posIni);
+            formateada += "Carga:" +tab +tab + tab + tab + carga + " cm\n";
+            int posFin = respuestaPhp.indexOf(124, posIni + 1);
+            caudal = respuestaPhp.substring(posIni + 1, posFin);
+            formateada += "Caudal:" + tab +tab + caudal + " l/s\n";
+            posIni = posFin;
+            posFin = respuestaPhp.indexOf(124, posIni + 1);
+            volts = respuestaPhp.substring(posIni + 1, posFin);
+            formateada += "Bateria:" + tab +tab + volts+" V";
+        }else{
+            formateada = "";
+            formateada = "¡Ese equipo no tiene registro de lectura actual!"
+                    + "\n\nRespuesta de la Web: "+respuestaPhp;
+        }
+        //t.setText(respuestaPhp);
+        t.setText("");
+        t.setText(formateada);
+
     }
 
     private String GetPhp(String reg, String php){
