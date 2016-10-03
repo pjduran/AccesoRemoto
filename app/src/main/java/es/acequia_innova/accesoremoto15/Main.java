@@ -3,6 +3,7 @@ package es.acequia_innova.accesoremoto15;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.android.volley.Request;
@@ -21,26 +22,42 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private String nombrePhp="";
     public static String respuestaPhp="";
     public static String formateada = "";
+    public static String serie;
+    public static TextView TvMensajes;
     public TextView t;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        TvMensajes =  (TextView) findViewById(R.id.textView_Mensajes);
+        TvMensajes.setText(getResources().getString(R.string.ingreseUsuClave));
 
         //LO PRIMERO SERIA CONFIRMAR LA EXISTENCIA DEL USUARIO Y SU CLAVE
-
+        //Esto lo hace onClickOK()
 
         //LUEGO HAY QUE ENCONTRAR LOS EQUIPOS QUE LE PERTENECEN Y PONERLOS EN UN DESPLEGABLE
 
 
         //AL ELEGIR UNO, HAY QUE BUSCAR SUS DATOS ACTUALES Y MOSTRARLOS EN UN AREA DE TEXTO
-
-        BajoDatosActuales("1507171821");
-
+        serie = "1507171821";
+        BajoDatosActuales(serie);
 
     }
 
+
+    private boolean onClickOk() {
+        boolean ok = false;
+        EditText tUsu = (EditText) findViewById(R.id.editTxt_Usu);
+        EditText tClave = (EditText) findViewById(R.id.editTxt_Usu);
+
+        String mensError = getResources().getString(R.string.errorUsuClave);
+        if (tUsu.getText().length() < 1 || tClave.getText().length() < 1) {
+            TvMensajes.setText(mensError);
+        }
+
+        return ok;
+    }
     private void BajoDatosActuales (String serie){
         nombrePhp = "bajoDatosActuales.php";
         registro = "dato="+serie;

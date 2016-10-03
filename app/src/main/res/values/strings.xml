@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Acceso Remoto 1.5</string>
     <string name="respuesta">La respuesta del PHP es:  </string>
-
+    <string name="errorUsuClave">Debe llenar los campos Usuario y Clave</string>
+    <string name="ingreseUsuClave">Complete campos Usuario y Clave y pulse el botón OK</string>
 </resources>
