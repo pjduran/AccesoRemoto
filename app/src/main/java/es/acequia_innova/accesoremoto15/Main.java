@@ -52,7 +52,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         String caudal;
         String volts;
         //String tab;
-        t = (TextView) findViewById(R.id.textView1);
+        t = (TextView) findViewById(R.id.textView3);
         String respu = GetPhp(registro,nombrePhp);
         Character tab=9;
         //tab = getString(R.string.tab);
