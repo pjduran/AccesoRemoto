@@ -4,9 +4,13 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -31,31 +35,73 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private static boolean isAdminSist;
     private int numTit;
     private static int numUsu;
+    private static Spinner combo;
+    private static String [] nomEquip;
+    private static String [] serieEquip;
+    private static String [][] eq;
+    private static int numEqEncontrados;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         TvMensajes =  (TextView) findViewById(R.id.textView_Mensajes);
         //TvMensajes.setText(getResources().getString(R.string.ingreseUsuClave));
         TvMensajes.setText(R.string.ingreseUsuClave); //ESta forma es más simple que la anterior
 
+        //////////////////////
+        ///ARMO EL BOTON
+        ///////////
         Button boton = (Button) findViewById(R.id.butt_OK);
         boton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 //LO PRIMERO SERIA CONFIRMAR LA EXISTENCIA DEL USUARIO Y SU CLAVE
                 //Esto lo hace onClickOK()
                 boolean existeUsu = onClickOk();
 
-                //LUEGO HAY QUE ENCONTRAR LOS EQUIPOS QUE LE PERTENECEN Y PONERLOS EN UN DESPLEGABLE
+                //LUEGO HAY QUE ENCONTRAR LOS EQUIPOS QUE LE PERTENECEN Y PONERLOS EN UN ARRAY String[]
+                //Para que se vean en el Spinner
+                if (existeUsu){ //Si existe el usuario, hay que buscar sus equipos
+
+
+                }
+
             }
         });
 
+        ///////////////////////
+        ////ARMO EL SPINNER DESPLEGABLE Y SU METODO DE CAPTURA
+        ////////////
+        combo = (Spinner) findViewById(R.id.spinner_Equipos);
+        //Creamos el adaptador del spinner donde el tercer parámetro es el array donde van a ir los nombres
+        ArrayAdapter adaptador = new ArrayAdapter(this,android.R.layout.simple_spinner_item, nomEquip);
 
-        //AL ELEGIR UNO, HAY QUE BUSCAR SUS DATOS ACTUALES Y MOSTRARLOS EN UN AREA DE TEXTO
-        //serie = "1507171821";
-        //BajoDatosActuales(serie);
+        //Creo que primero habría que llenar el array String [] nomEquip
+
+        //Vinculamos el Spinner con su adaptador
+        combo.setAdapter(adaptador);
+
+        combo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                //Aqui adentro habría que
+                //AL ELEGIR UNO, HAY QUE BUSCAR SUS DATOS ACTUALES Y MOSTRARLOS EN UN AREA DE TEXTO
+                int indiceArray = combo.getSelectedItemPosition(); //no se si hay que restarle 1
+                /*
+                serie = serieEquip[]; //"1507171821";
+                BajoDatosActuales(serie);
+                */
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                Toast to = Toast.makeText(getApplicationContext(), "La cagaste Burt Lancaster", Toast.LENGTH_LONG);
+                to.show();
+            }
+        });
 
     }
 
@@ -87,6 +133,154 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         }
 
         return ok;
+    }
+
+    //Aqui hay que sustituir el combobox por una lista desplegable
+    public static boolean encuentroEquipos(Spinner jCBequipos) {
+        System.out.println("Entro a encuentroEquipos()");
+        //debe encontrar los equipos de ese usuario o administrador
+        if(isAdminSist){
+            if(buscoEquipAdmin(jCBequipos))
+                return true;
+            else
+                return false;
+        }else{
+            if(buscoEquiposUsu(jCBequipos))
+                return true;
+            else
+                return false;
+        }
+    }
+
+    /**
+     * Obtiene un array de String doble a partir de una String obtenida por phpGet()
+     * array de bytes donde las campos
+     * tienen un largo VARIABLE y estan separadas por el caracter
+     * @param b
+     * @return
+     */
+    public String[][] obtengoLinEquip(String b, char d, int esp){
+        int numLineas = cuentoLineas(b,d);
+        System.out.println("Numero de celdas del StringBuffer: "+numLineas);
+        int nL;
+        if(numLineas%2==0)
+            nL = numLineas/2;
+        else
+            nL = numLineas/2+1;
+        System.out.println("Numero de equipos: "+nL);
+        numEqEncontrados=nL;
+        String[][] lineas = new String[2][nL];
+        String lin = ""; //aqui guardo cada una de las campos separadas por un caracter
+        int j=0;
+        int celda=0; //0: serie; 1: nombre del equipo
+        char c;
+        //obtengo las cadenas con la linea de cada variable
+        for (int k = 0; k < b.length(); k++) {
+//			System.out.print(b[k]);
+            c = b.charAt(k);
+            if (c != d) {//si el byte leido no es el limitador de campos, acumulo las letras
+                lin = lin + c;
+            } else {
+                if (celda == 0) { //si la celda es 1
+                    lineas[celda][j] = lin.trim(); //guardo la celda uno: nombre
+                    celda = 1; //cambio a cero
+                } else { //si la celda es cero
+                    lineas[celda][j] = lin.trim(); //guardo la ceelda cero: serie
+                    celda = 0; //cambio a 1 para la proxima vez
+//                    System.out.println("Linea " + j + " : "
+//                            + lineasConH[0][j] + "  " + lineasConH[1][j]);
+                    j++;
+                }
+                k = k + esp;
+                lin = "";
+            }
+        }
+//		log.grabo("salgo de obtengo campos; nro campos obtenidas: "+j);
+        return lineas;
+    }
+
+    /* Cuenta el numero de caracteres "<" en el byte[] enviado como parámetro
+    * @param b (lo leido de la web), direc(caracter separador de campos)
+    * @return
+    * int con el numero de campos
+    */
+    public int cuentoLineas(String b, char d){
+        int numL=0;
+        char c;
+        for (int j=0;j<b.length();j++){
+            c= b.charAt(j);
+            if (c==d)
+                numL++;
+        }
+        System.out.println("Número de unidades separadas por el caracter "+d+" : "+numL);
+        return numL;
+    }
+
+    //Aqui hay que sustituir el combobox por una lista desplegable
+    private boolean buscoEquipAdmin(Spinner jCBequipos) {
+        //ResultSet rs = null;
+        char d = ';';
+        int numCar = 0;
+        String[] equip;
+        //aqui debo armar la consulta con phpGet(reg, php)
+        String reg = "dato=" + numTit;
+        String sb = phpGet(reg, "buscoEquiposAdmin3.php");
+        System.out.println("Respuesta del buscoEquiposAdmin3.php: "+sb);
+//        if(!(sbUltReg.toString().contains("false")) &&!(sbUltReg.toString().contains("error"))){
+//            equip = obtengoCampos(sbUltReg, direc, numCar);
+
+        ////////////////
+        System.out.println("Respuesta del buscoEquiposUsu.php: "+sb);
+        if(sb!=null && !(sb.contains("false")) &&!(sb.contains("error"))){
+            eq = obtengoLinEquip(sb, d, numCar);
+            equip = new String[numEqEncontrados];
+            System.out.println("Número de lineas en matriz eq: "+numEqEncontrados);
+            for(int j=0;j<numEqEncontrados;j++){
+                equip[j]=eq[1][j];
+            }
+            ////////////
+            llenoComboEquip(jCBequipos, equip);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    //Aqui hay que sustituir el combobox por una lista desplegable
+    private boolean  buscoEquiposUsu(JComboBox jCBequipos) {
+        System.out.println("Entro a buscoEquiposUsu()");
+        String sb = null;
+        String[] equip;
+        char d = ';';
+        int numCar = 0;
+        //aqui debo armar la consulta con phpGet(reg, php)
+        String reg = "dato=" + numUsu;
+        sb = phpGet(reg, "buscoEquiposUsu.php");
+        System.out.println("Respuesta del buscoEquiposUsu.php: "+sb.toString());
+        if(sb!=null && !(sb.toString().contains("false")) &&!(sb.toString().contains("error"))){
+            eq = obtengoLinEquip(sb, d, numCar);
+            equip = new String[numEqEncontrados];
+            System.out.println("Número de lineas en matriz eq: "+numEqEncontrados);
+            for(int j=0;j<numEqEncontrados;j++){
+                equip[j]=eq[1][j];
+            }
+            llenoComboEquip(jCBequipos, equip);
+            return true;
+        }else{
+            System.out.println("Algo salio mal en buscoEquiposUsu");
+            return false;
+        }
+    }
+
+    //Aqui hay que sustituir el combobox por una lista desplegable
+    private static void llenoComboEquip(Spinner jCBequipos, String[] eq) {
+        DefaultComboBoxModel modeloCombo = new DefaultComboBoxModel();//esto es el modelo
+        modeloCombo.addElement("Seleccione un Equipo");//es el primer registro q mostrara el combo
+        jCBequipos.setModel(modeloCombo);//con esto lo agregamos al objeto al jcombobox
+        for (int j = 0; j < eq.length; j++) {
+            modeloCombo.addElement(eq[j]);
+            jCBequipos.setModel(modeloCombo);
+        }
     }
 
     public synchronized boolean buscoUsuario(String usuario, String clave){
