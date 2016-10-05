@@ -1,6 +1,9 @@
 package es.acequia_innova.accesoremoto15;
 
 import android.app.Activity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -10,7 +13,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -25,7 +27,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
 
     private String urlFija = "http://www.acequia-innova.es/misPhp/";
     private static String url = "";
-    private String registro="";
+    //private String registro="";
     private String nombrePhp="";
     public static String respuestaPhp="";
     public static String formateada = "";
@@ -35,11 +37,12 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private static boolean isAdminSist;
     private int numTit;
     private static int numUsu;
-    private static Spinner combo;
-    private static String [] nomEquip;
-    private static String [] serieEquip;
-    private static String [][] eq;
+    private Spinner combo;
+    private String [] nomEquip;  //array donde se guardan los nombres de equipo
+    private static String [] serieEquip;//array donde se guardan las series
+    private static String [][] eq; //aray doble con nombre y serie
     private static int numEqEncontrados;
+    private ArrayAdapter adaptador;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,43 +68,40 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
                 //LUEGO HAY QUE ENCONTRAR LOS EQUIPOS QUE LE PERTENECEN Y PONERLOS EN UN ARRAY String[]
                 //Para que se vean en el Spinner
                 if (existeUsu){ //Si existe el usuario, hay que buscar sus equipos
+                    boolean encontreEquip = encuentroEquipos();
+                    ///////////////////////
+                    ////ARMO EL SPINNER DESPLEGABLE Y SU METODO DE CAPTURA
+                    ////////////
+                    if(encontreEquip) { //con esto ya tengo llenos los arrays con nombres y series
+                        combo = (Spinner) findViewById(R.id.spinner_Equipos);
+                        //Creamos el adaptador del spinner donde el tercer parámetro es el array donde van a ir los nombres
+                        adaptador = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_spinner_item, nomEquip);
 
+                        //Vinculamos el Spinner con su adaptador
+                        combo.setAdapter(adaptador);
 
+                        //Escuchador de selección de item del spinner
+                        combo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                //AL ELEGIR UNO, HAY QUE BUSCAR SUS DATOS ACTUALES Y MOSTRARLOS EN UN AREA DE TEXTO
+                                int indiceArray = combo.getSelectedItemPosition(); //no se si hay que restarle 1
+                                serie = serieEquip[indiceArray]; //"1507171821";
+                                BajoDatosActuales(serie);
+                            }
+
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) {
+                                //Toast to = Toast.makeText(getApplicationContext(), "La cagaste Burt Lancaster", Toast.LENGTH_LONG);
+                                //to.show();
+                            }
+                        });
+                    }
                 }
 
             }
         });
 
-        ///////////////////////
-        ////ARMO EL SPINNER DESPLEGABLE Y SU METODO DE CAPTURA
-        ////////////
-        combo = (Spinner) findViewById(R.id.spinner_Equipos);
-        //Creamos el adaptador del spinner donde el tercer parámetro es el array donde van a ir los nombres
-        ArrayAdapter adaptador = new ArrayAdapter(this,android.R.layout.simple_spinner_item, nomEquip);
-
-        //Creo que primero habría que llenar el array String [] nomEquip
-
-        //Vinculamos el Spinner con su adaptador
-        combo.setAdapter(adaptador);
-
-        combo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                //Aqui adentro habría que
-                //AL ELEGIR UNO, HAY QUE BUSCAR SUS DATOS ACTUALES Y MOSTRARLOS EN UN AREA DE TEXTO
-                int indiceArray = combo.getSelectedItemPosition(); //no se si hay que restarle 1
-                /*
-                serie = serieEquip[]; //"1507171821";
-                BajoDatosActuales(serie);
-                */
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                Toast to = Toast.makeText(getApplicationContext(), "La cagaste Burt Lancaster", Toast.LENGTH_LONG);
-                to.show();
-            }
-        });
 
     }
 
@@ -129,6 +129,10 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
                 TvMensajes.setText("YUPII, usuario y clave correctos");
             }else{
                 TvMensajes.setText("No existe esa combinacion de Usuario y Clave");
+                //Toast t1 = Toast.makeText(getApplicationContext(),
+                //        "No existe esa combinacion de Usuario y Clave", Toast.LENGTH_LONG);
+                //t1.show();
+
             }
         }
 
@@ -136,16 +140,16 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     }
 
     //Aqui hay que sustituir el combobox por una lista desplegable
-    public static boolean encuentroEquipos(Spinner jCBequipos) {
+    public boolean encuentroEquipos() {
         System.out.println("Entro a encuentroEquipos()");
         //debe encontrar los equipos de ese usuario o administrador
         if(isAdminSist){
-            if(buscoEquipAdmin(jCBequipos))
+            if(buscoEquipAdmin())
                 return true;
             else
                 return false;
         }else{
-            if(buscoEquiposUsu(jCBequipos))
+            if(buscoEquiposUsu())
                 return true;
             else
                 return false;
@@ -216,30 +220,32 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         return numL;
     }
 
-    //Aqui hay que sustituir el combobox por una lista desplegable
-    private boolean buscoEquipAdmin(Spinner jCBequipos) {
+
+    private boolean buscoEquipAdmin() {
         //ResultSet rs = null;
         char d = ';';
         int numCar = 0;
-        String[] equip;
+
         //aqui debo armar la consulta con phpGet(reg, php)
         String reg = "dato=" + numTit;
-        String sb = phpGet(reg, "buscoEquiposAdmin3.php");
-        System.out.println("Respuesta del buscoEquiposAdmin3.php: "+sb);
-//        if(!(sbUltReg.toString().contains("false")) &&!(sbUltReg.toString().contains("error"))){
-//            equip = obtengoCampos(sbUltReg, direc, numCar);
+        System.out.println("buscoEquiposAdmin() - registro: "+reg);
+        phpGet(reg, "buscoEquiposAdmin3.php");
+        String sb = respuestaPhp;
+        sb = respuestaPhp;
+        System.out.println("Respuesta de buscoEquiposAdmin3.php: "+sb);
+
 
         ////////////////
-        System.out.println("Respuesta del buscoEquiposUsu.php: "+sb);
+        //System.out.println("Respuesta del buscoEquiposUsu.php: "+sb);
         if(sb!=null && !(sb.contains("false")) &&!(sb.contains("error"))){
             eq = obtengoLinEquip(sb, d, numCar);
-            equip = new String[numEqEncontrados];
+            nomEquip = new String[numEqEncontrados]; //defino los arrays con nombres y series
+            serieEquip = new String[numEqEncontrados];
             System.out.println("Número de lineas en matriz eq: "+numEqEncontrados);
             for(int j=0;j<numEqEncontrados;j++){
-                equip[j]=eq[1][j];
+                nomEquip[j]=eq[1][j];
+                serieEquip[j]=eq[0][j];
             }
-            ////////////
-            llenoComboEquip(jCBequipos, equip);
             return true;
         }else{
             return false;
@@ -247,41 +253,35 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     }
 
     //Aqui hay que sustituir el combobox por una lista desplegable
-    private boolean  buscoEquiposUsu(JComboBox jCBequipos) {
+    private boolean  buscoEquiposUsu() {
         System.out.println("Entro a buscoEquiposUsu()");
         String sb = null;
-        String[] equip;
         char d = ';';
         int numCar = 0;
         //aqui debo armar la consulta con phpGet(reg, php)
         String reg = "dato=" + numUsu;
-        sb = phpGet(reg, "buscoEquiposUsu.php");
+        phpGet(reg, "buscoEquiposUsu.php");
+        sb = respuestaPhp;
         System.out.println("Respuesta del buscoEquiposUsu.php: "+sb.toString());
         if(sb!=null && !(sb.toString().contains("false")) &&!(sb.toString().contains("error"))){
             eq = obtengoLinEquip(sb, d, numCar);
-            equip = new String[numEqEncontrados];
+            nomEquip = new String[numEqEncontrados];
+            serieEquip = new String[numEqEncontrados];
             System.out.println("Número de lineas en matriz eq: "+numEqEncontrados);
             for(int j=0;j<numEqEncontrados;j++){
-                equip[j]=eq[1][j];
+                nomEquip[j]=eq[1][j];
+                serieEquip[j]=eq[0][j];
             }
-            llenoComboEquip(jCBequipos, equip);
             return true;
         }else{
             System.out.println("Algo salio mal en buscoEquiposUsu");
+            //Toast t0 = Toast.makeText(getApplicationContext(), "Algo salio mal en buscoEquiposUsu", Toast.LENGTH_LONG);
+            //t0.show();
             return false;
         }
     }
 
-    //Aqui hay que sustituir el combobox por una lista desplegable
-    private static void llenoComboEquip(Spinner jCBequipos, String[] eq) {
-        DefaultComboBoxModel modeloCombo = new DefaultComboBoxModel();//esto es el modelo
-        modeloCombo.addElement("Seleccione un Equipo");//es el primer registro q mostrara el combo
-        jCBequipos.setModel(modeloCombo);//con esto lo agregamos al objeto al jcombobox
-        for (int j = 0; j < eq.length; j++) {
-            modeloCombo.addElement(eq[j]);
-            jCBequipos.setModel(modeloCombo);
-        }
-    }
+
 
     public synchronized boolean buscoUsuario(String usuario, String clave){
         //debo saber si busco un administrador o usuario final
@@ -318,7 +318,8 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         //String usuario = pUf.txtUsuario.getText();
         String reg = "dato="+usuario+","+clave;
         String sbErr = "Error al buscar usuario y clave";
-        String sb=phpGet(reg, php);
+        phpGet(reg, php);
+        String sb= respuestaPhp;
         if(sb!=null){
             sbErr = sb;
             //aqui debo obtener el nro de Admin del Sist
@@ -366,13 +367,16 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         String usuario = pUf;
         //String usuario = pUf.txtUsuario.getText();
         String reg = "dato="+usuario+","+clave;
-        String sbErr = "Error al buscar usuario y clave";
-        String sb = phpGet(reg, php);
-        if (sb.length()>23) {
-            sbErr = sb;
+        phpGet(reg, php);
+        String sb = respuestaPhp;
+        System.out.println();
+        System.out.println("isAdmin - Respuesta de phpGet sb: "+sb+"  o respuestaPhp: "+respuestaPhp);
+        if (sb.length()>20) {
+            //sbErr = sb;
             //aqui debo obtener el nro de Admin del Sist
 //            String cad = sbUltReg.toString();
-            String cad = sbErr;
+            //String cad = sbErr;
+            String cad = sb;
             System.out.println("isAdmin()- Cadena recibida del php: " + cad);
             String num = cad.substring(cad.indexOf("Nro Admin Sist:") + 15, cad.indexOf('|')).trim();
             System.out.println("Numero extraido " + num);
@@ -387,8 +391,11 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
             }
         }else{
             ret = false;
+            String sbErr = "Error al buscar usuario y clave";
+            System.out.println("isAdmin - "+sbErr);
+            //Toast t2 = Toast.makeText(getApplicationContext(),sbErr, Toast.LENGTH_LONG);
+            //t2.show();
         }
-        //HAY QUE HACER ALGO CON EL MENSAJE sbError
         return ret;
     }
 
@@ -402,10 +409,12 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         //String clave = clave;
         //String usuario = pUf.txtUsuario.getText();
         String usuario = pUf;
-//        String reg = "dato="+usuario;
+
         String reg = "dato="+usuario+","+clave;
-        String sbErr = "Error al buscar usuario y clave";
-        String sb=phpGet(reg, php);
+        String sbErr = "";
+        //String sbErr = "Error al buscar usuario y clave";
+        phpGet(reg, php);
+        String sb= respuestaPhp;
         if(sb.length()>23){
             sbErr = sb;
             //aqui debo obtener el nro de usuario
@@ -422,6 +431,8 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
                 //pUf.jLabComentarios1.setText(nom);
 //                Web.numTit = Integer.parseInt(cad.substring(cad.indexOf("Num Admin")+15, cad.indexOf('|')).trim());
                 System.out.println("Numero del padre del usuario: "+  numTit);
+                //Toast t4 = Toast.makeText(getApplicationContext(), nom, Toast.LENGTH_LONG);
+                //t4.show();
             }else if (numUsu==0){
                 sbErr = "ERROR: Usuario/clave no existen";
                 //pUf.jLabComentarios1.setText("ERROR: Usuario/clave no existen");
@@ -436,6 +447,11 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
 //             pUf.jListNomUsu.setListData(sbErr);
         }
         //HAY QUE HACER ALGO CON LOS MENSAJES nom y sbError
+        if (sbErr.length() > 1) {
+            System.out.println("buscoUsuarioFinal() - "+sbErr);
+            //Toast t3 = Toast.makeText(getApplicationContext(), sbErr, Toast.LENGTH_LONG);
+            //t3.show();
+        }
         return ret;
     }
 
@@ -443,7 +459,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private void BajoDatosActuales (String serie){
         System.out.println("Entro a BajoDatosActuales()");
         nombrePhp = "bajoDatosActuales.php";
-        registro = "dato="+serie;
+        String reg = "dato="+serie;
         String lectura = "";
 
         String fechaInst;
@@ -453,7 +469,8 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         String volts;
         //String tab;
         t = (TextView) findViewById(R.id.textView3);
-        String respu = phpGet(registro,nombrePhp);
+        phpGet(reg,nombrePhp);
+        String respu = respuestaPhp;
         Character tab=9;
         //tab = getString(R.string.tab);
         //String nombreAplicacion = getResources().getString(R.string.app_name);
@@ -493,20 +510,35 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
 
     }
 
+    private boolean isNetworkConnected(Context context) {
+
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context
+                .CONNECTIVITY_SERVICE);
+        NetworkInfo info = connectivityManager.getActiveNetworkInfo();
+        if (info == null || !info.isConnected() || !info.isAvailable()) {
+            return false;
+        }
+        return true;
+    }
+
     private String phpGet(String reg, String php){
-        String respuesta="";
         url = urlFija+php+"?"+reg;
-        System.out.println("URL enviada a la web: "+url);
+        //Primero verifico si ha conexion a internet
+        if(isNetworkConnected(getApplicationContext())){
+            System.out.println("Hay conexion a Internet");
+        }else{
+            System.out.println("No hay conexion a Internet");
+        }
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
-                    @Override
                     public void onResponse(String response) {
                         Log.d("onResponse()", "La respuesta es: "+ response);
                         respuestaPhp = response;
                     }
+
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
@@ -517,6 +549,8 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
 //  Add the request to the RequestQueue.
         queue.add(stringRequest);
         //respuesta = respuestaPhp;
+        System.out.println("URL enviada a la web: "+url);
+        System.out.println("Respuesta del php "+php+" :"+respuestaPhp);
         return respuestaPhp;
     }
 
