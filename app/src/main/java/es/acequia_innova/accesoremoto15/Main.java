@@ -30,6 +30,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     //private String registro="";
     private String nombrePhp="";
     public static String respuestaPhp="";
+    public static String respuestaPhpAnterior="";
     public static String formateada = "";
     public static String serie;
     public static TextView TvMensajes;
@@ -70,6 +71,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
 
         boton2.setEnabled(false); //Lo dejo inhabilitado hasta que encuentre el usuario
         boton3.setEnabled(false); //Lo dejo inhabilitado hasta que encuentre equipos
+        boton4.setEnabled(false); //Lo dejo inhabilitado hasta que encuentre equipos
 
         boton1.setOnClickListener(new Button.OnClickListener() {
             @Override
@@ -96,11 +98,12 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
 
                     //do {
                     encontreEquip = encuentroEquipos();
-                    if (encontreEquip || numEqEncontrados>0) {
+                    if (encontreEquip && numEqEncontrados>0) {
                         TvMensajes.setText("SE HAN ENCONTRADOS LOS EQUIPOS DE ESTE USUARIO. Son: " + numEqEncontrados);
                         boton3.setEnabled(true);
-                        //boton2.setEnabled(false);
-                    }
+                        boton2.setEnabled(false);
+                    }else
+                        TvMensajes.setText("PULSE NUEVAMENTE");
                 }
             }
         });
@@ -139,7 +142,9 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
                         System.out.println("Indice del elemento seleccionado en el spinner: "+indiceArray);
                         serie = serieEquip[indiceArray]; //"1507171821";
                         System.out.println("SERIE DEL EQUIPO SELECCIONADO: "+serie);
-
+                        TvMensajes.setText("EQUIPO: "+ nomEquip[indiceArray]);
+                        boton3.setEnabled(false);
+                        boton4.setEnabled(true);
                     }
 
                     @Override
@@ -535,9 +540,10 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         //lectura = getResources().getString(R.string.respuesta);
         //lectura += respuestaPhp;
         //System.out.println(lectura);
-        //System.out.println(respuestaPhp);
-        if (respuestaPhp.length() > 15) {
-//            formateada = lectura + "\n";
+        System.out.println("Datos Actuales leidos: "+respu);
+        System.out.println("Posicion del caracter ';' es: "+respu.indexOf(';'));
+        if (respu.indexOf(';')<0 && respu.length() > 15 ) {
+            System.out.println("Los datos leidos son >15 chars y no tienen ';'");
             formateada = "";
             //fechaInst=respuestaPhp.substring(0, 17);
             fechaInst=respuestaPhp.substring(0, 8);
@@ -558,8 +564,12 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
             volts = respuestaPhp.substring(posIni + 1, posFin);
             formateada += "Bateria:" + tab +tab + volts+" V";
         }else{
+
             formateada = "";
-            formateada = "¡Ese equipo no tiene registro de lectura actual!"
+            if (respu.indexOf(';')>0)
+                formateada = "¡¡REINTENTE!!";
+            else
+                formateada = "¡Ese equipo no tiene registro de lectura actual!"
                     + "\n\nRespuesta de la Web: "+respuestaPhp;
         }
         //t.setText(respuestaPhp);
