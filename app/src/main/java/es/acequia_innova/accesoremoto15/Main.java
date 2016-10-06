@@ -43,6 +43,13 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private static String [][] eq; //aray doble con nombre y serie
     private static int numEqEncontrados;
     private ArrayAdapter adaptador;
+    private boolean existeUsu;
+    private static Button boton1;
+    private static Button boton2;
+    private static Button boton3;
+    private static Button boton4;
+    private static boolean encontreEquip;
+    public static final String TAG = "Peticiónes queue a borrar";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,57 +61,102 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         TvMensajes.setText(R.string.ingreseUsuClave); //ESta forma es más simple que la anterior
 
         //////////////////////
-        ///ARMO EL BOTON
+        ///ARMO EL BOTON DE BUSQUEDA DE USUARIOS
         ///////////
-        Button boton = (Button) findViewById(R.id.butt_OK);
-        boton.setOnClickListener(new Button.OnClickListener() {
+        boton1 = (Button) findViewById(R.id.butt_OK);
+        boton2 = (Button) findViewById(R.id.butt_BuscoEquipos);
+        boton3 = (Button) findViewById(R.id.butt_CargoSpinner);
+        boton4 = (Button) findViewById(R.id.butt_DatosActuales);
+
+        boton2.setEnabled(false); //Lo dejo inhabilitado hasta que encuentre el usuario
+        boton3.setEnabled(false); //Lo dejo inhabilitado hasta que encuentre equipos
+
+        boton1.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 //LO PRIMERO SERIA CONFIRMAR LA EXISTENCIA DEL USUARIO Y SU CLAVE
                 //Esto lo hace onClickOK()
-                boolean existeUsu = onClickOk();
+                existeUsu = onClickOk();
 
+                if(existeUsu){
+                    boton2.setEnabled(true);
+                }
+            }
+        });
+
+        boton2.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Hay que encontrar los equipos del usuario
                 //LUEGO HAY QUE ENCONTRAR LOS EQUIPOS QUE LE PERTENECEN Y PONERLOS EN UN ARRAY String[]
                 //Para que se vean en el Spinner
                 if (existeUsu){ //Si existe el usuario, hay que buscar sus equipos
-                    boolean encontreEquip = encuentroEquipos();
-                    ///////////////////////
-                    ////ARMO EL SPINNER DESPLEGABLE Y SU METODO DE CAPTURA
-                    ////////////
-                    if(encontreEquip) { //con esto ya tengo llenos los arrays con nombres y series
-                        combo = (Spinner) findViewById(R.id.spinner_Equipos);
-                        //Creamos el adaptador del spinner donde el tercer parámetro es el array donde van a ir los nombres
-                        adaptador = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_spinner_item, nomEquip);
+                    boton1.setEnabled(false);
 
-                        //Vinculamos el Spinner con su adaptador
-                        combo.setAdapter(adaptador);
-
-                        //Escuchador de selección de item del spinner
-                        combo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                            @Override
-                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                                //AL ELEGIR UNO, HAY QUE BUSCAR SUS DATOS ACTUALES Y MOSTRARLOS EN UN AREA DE TEXTO
-                                int indiceArray = combo.getSelectedItemPosition(); //no se si hay que restarle 1
-                                serie = serieEquip[indiceArray]; //"1507171821";
-                                BajoDatosActuales(serie);
-                            }
-
-                            @Override
-                            public void onNothingSelected(AdapterView<?> parent) {
-                                //Toast to = Toast.makeText(getApplicationContext(), "La cagaste Burt Lancaster", Toast.LENGTH_LONG);
-                                //to.show();
-                            }
-                        });
+                    //do {
+                    encontreEquip = encuentroEquipos();
+                    if (encontreEquip || numEqEncontrados>0) {
+                        TvMensajes.setText("SE HAN ENCONTRADOS LOS EQUIPOS DE ESTE USUARIO. Son: " + numEqEncontrados);
+                        boton3.setEnabled(true);
+                        //boton2.setEnabled(false);
                     }
                 }
-
             }
+        });
+
+
+        boton4.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //MOSTRAR LOS DATOS ACTUALES DEL EQUIPO
+                boton2.setEnabled(false);
+                BajoDatosActuales(serie);
+            }
+        });
+
+
+        boton3.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //YA TENGO EL ARRAY CON LOS EQUIPOS
+                //DEBO CARGAR EL SPINNER
+                combo = (Spinner) findViewById(R.id.spinner_Equipos);
+                //Creamos el adaptador del spinner donde el tercer parámetro es el array donde van a ir los nombres
+                adaptador = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_spinner_item, nomEquip);
+                System.out.println("Se ha creado el adaptador del spinner");
+                //Vinculamos el Spinner con su adaptador
+                combo.setAdapter(adaptador);
+                System.out.println("se ha vinculado el espiner con su adaptador");
+
+                //Escuchador de selección de item del spinner
+                combo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        //AL ELEGIR UNO, HAY QUE BUSCAR SUS DATOS ACTUALES Y MOSTRARLOS EN UN AREA DE TEXTO
+                        System.out.println("spinner - onItemSelected");
+                        int indiceArray = combo.getSelectedItemPosition(); //no se si hay que restarle 1
+                        System.out.println("Indice del elemento seleccionado en el spinner: "+indiceArray);
+                        serie = serieEquip[indiceArray]; //"1507171821";
+                        System.out.println("SERIE DEL EQUIPO SELECCIONADO: "+serie);
+
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+                        //Toast to = Toast.makeText(getApplicationContext(), "La cagaste Burt Lancaster", Toast.LENGTH_LONG);
+                        //to.show();
+                    }
+                });
+            };
         });
 
 
     }
 
+    ///////////////////////////////////////
+    //FUNCIONES PROPIAS
+    /////////////////////
 
     public boolean onClickOk() {
         System.out.println("Entro a onClickOk()");
@@ -143,17 +195,23 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     public boolean encuentroEquipos() {
         System.out.println("Entro a encuentroEquipos()");
         //debe encontrar los equipos de ese usuario o administrador
-        if(isAdminSist){
-            if(buscoEquipAdmin())
-                return true;
-            else
-                return false;
-        }else{
-            if(buscoEquiposUsu())
-                return true;
-            else
-                return false;
-        }
+        boolean r=false;
+        int cuento = 0;
+        //do {
+            if (isAdminSist) {
+                if (buscoEquipAdmin())
+                    r = true;
+                else
+                    r = false;
+            } else {
+                if (buscoEquiposUsu())
+                    r = true;
+                else
+                    r = false;
+            }
+            cuento++;
+        //}while(!r && cuento<2);
+        return r;
     }
 
     /**
@@ -180,19 +238,19 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         char c;
         //obtengo las cadenas con la linea de cada variable
         for (int k = 0; k < b.length(); k++) {
-//			System.out.print(b[k]);
+	//		System.out.print(b[k]);
             c = b.charAt(k);
             if (c != d) {//si el byte leido no es el limitador de campos, acumulo las letras
                 lin = lin + c;
             } else {
-                if (celda == 0) { //si la celda es 1
+                if (celda == 0) { //si la celda es 0
                     lineas[celda][j] = lin.trim(); //guardo la celda uno: nombre
                     celda = 1; //cambio a cero
                 } else { //si la celda es cero
-                    lineas[celda][j] = lin.trim(); //guardo la ceelda cero: serie
+                    lineas[celda][j] = lin.trim(); //guardo la celda cero: serie
                     celda = 0; //cambio a 1 para la proxima vez
-//                    System.out.println("Linea " + j + " : "
-//                            + lineasConH[0][j] + "  " + lineasConH[1][j]);
+                    System.out.println("Linea " + j + " : "
+                            + lineas[0][j] + "  " + lineas[1][j]);
                     j++;
                 }
                 k = k + esp;
@@ -232,13 +290,13 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         phpGet(reg, "buscoEquiposAdmin3.php");
         String sb = respuestaPhp;
         sb = respuestaPhp;
-        System.out.println("Respuesta de buscoEquiposAdmin3.php: "+sb);
+        System.out.println("Respuesta de buscoEquiposAdmin3.php: "+respuestaPhp);
 
 
         ////////////////
         //System.out.println("Respuesta del buscoEquiposUsu.php: "+sb);
-        if(sb!=null && !(sb.contains("false")) &&!(sb.contains("error"))){
-            eq = obtengoLinEquip(sb, d, numCar);
+        if(respuestaPhp!=null && !(respuestaPhp.contains("false")) &&!(respuestaPhp.contains("error"))){
+            eq = obtengoLinEquip(respuestaPhp, d, numCar);
             nomEquip = new String[numEqEncontrados]; //defino los arrays con nombres y series
             serieEquip = new String[numEqEncontrados];
             System.out.println("Número de lineas en matriz eq: "+numEqEncontrados);
@@ -255,16 +313,16 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     //Aqui hay que sustituir el combobox por una lista desplegable
     private boolean  buscoEquiposUsu() {
         System.out.println("Entro a buscoEquiposUsu()");
-        String sb = null;
+        //String sb = null;
         char d = ';';
         int numCar = 0;
         //aqui debo armar la consulta con phpGet(reg, php)
         String reg = "dato=" + numUsu;
         phpGet(reg, "buscoEquiposUsu.php");
-        sb = respuestaPhp;
-        System.out.println("Respuesta del buscoEquiposUsu.php: "+sb.toString());
-        if(sb!=null && !(sb.toString().contains("false")) &&!(sb.toString().contains("error"))){
-            eq = obtengoLinEquip(sb, d, numCar);
+        //sb = respuestaPhp;
+        System.out.println("Respuesta del buscoEquiposUsu.php: "+respuestaPhp.toString());
+        if(respuestaPhp!=null && !(respuestaPhp.toString().contains("false")) &&!(respuestaPhp.toString().contains("error"))){
+            eq = obtengoLinEquip(respuestaPhp, d, numCar);
             nomEquip = new String[numEqEncontrados];
             serieEquip = new String[numEqEncontrados];
             System.out.println("Número de lineas en matriz eq: "+numEqEncontrados);
@@ -468,7 +526,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         String caudal;
         String volts;
         //String tab;
-        t = (TextView) findViewById(R.id.textView3);
+        t = (TextView) findViewById(R.id.textView_Mensajes);
         phpGet(reg,nombrePhp);
         String respu = respuestaPhp;
         Character tab=9;
@@ -476,7 +534,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         //String nombreAplicacion = getResources().getString(R.string.app_name);
         //lectura = getResources().getString(R.string.respuesta);
         //lectura += respuestaPhp;
-        System.out.println(lectura);
+        //System.out.println(lectura);
         //System.out.println(respuestaPhp);
         if (respuestaPhp.length() > 15) {
 //            formateada = lectura + "\n";
@@ -521,36 +579,46 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         return true;
     }
 
-    private String phpGet(String reg, String php){
-        url = urlFija+php+"?"+reg;
+    private String phpGet(String reg, String php) {
+
+        url = urlFija + php + "?" + reg;
+        int cuento=0;
         //Primero verifico si ha conexion a internet
-        if(isNetworkConnected(getApplicationContext())){
+        if (isNetworkConnected(getApplicationContext())) {
             System.out.println("Hay conexion a Internet");
-        }else{
+        } else {
             System.out.println("No hay conexion a Internet");
         }
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
+        StringRequest stringRequest;
+
         // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+        stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     public void onResponse(String response) {
-                        Log.d("onResponse()", "La respuesta es: "+ response);
+                        Log.d("onResponse()", "La respuesta es: " + response);
                         respuestaPhp = response;
                     }
 
                 }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.d("onErrorResponse()", "ERROR en GetPhp: "+ error);
-                        respuestaPhp = error.toString();
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("onErrorResponse()", "ERROR en GetPhp: " + error);
+                respuestaPhp = error.toString();
             }
         });
 //  Add the request to the RequestQueue.
+        //stringRequest.setTag(TAG);
         queue.add(stringRequest);
         //respuesta = respuestaPhp;
-        System.out.println("URL enviada a la web: "+url);
-        System.out.println("Respuesta del php "+php+" :"+respuestaPhp);
+            //cuento ++;
+
+
+        System.out.println("Respuesta del php "+php+", variable respuestaPhp :"+respuestaPhp);
+
+        //stringRequest.cancel(); // esto es para probar a ver si deja de dar la respueta anterior
+
         return respuestaPhp;
     }
 

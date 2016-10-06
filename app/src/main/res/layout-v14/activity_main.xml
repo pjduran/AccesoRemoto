@@ -52,18 +52,6 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 
-    <TextView
-        android:text="TextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="43dp"
-        android:id="@+id/textView3"
-        android:layout_below="@+id/spinner_Equipos"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
-
     <Button
         android:text="OK"
         android:layout_width="wrap_content"
@@ -75,15 +63,6 @@
         android:layout_marginTop="28dp"
         android:onClick="onClicOk" />
 
-    <Spinner
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="37dp"
-        android:id="@+id/spinner_Equipos"
-        android:layout_below="@+id/butt_OK"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
-
     <TextView
         android:text="TextView"
         android:layout_width="wrap_content"
@@ -94,5 +73,49 @@
         android:layout_marginLeft="13dp"
         android:layout_marginStart="13dp"
         android:id="@+id/textView_Mensajes" />
+
+    <Button
+        android:text="CARGO EQUIPOS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/butt_OK"
+        android:layout_marginTop="23dp"
+        android:id="@+id/butt_CargoSpinner"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignLeft="@+id/butt_BuscoEquipos"
+        android:layout_alignStart="@+id/butt_BuscoEquipos" />
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinner_Equipos"
+        android:layout_above="@+id/textView_Mensajes"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="94dp" />
+
+    <Button
+        android:text="BUSCAR EQUIPOS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/butt_BuscoEquipos"
+        android:layout_above="@+id/butt_CargoSpinner"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignLeft="@+id/editText_Clave"
+        android:layout_alignStart="@+id/editText_Clave" />
+
+    <Button
+        android:text="DATOS ACTUALES"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/butt_CargoSpinner"
+        android:layout_alignLeft="@+id/butt_CargoSpinner"
+        android:layout_alignStart="@+id/butt_CargoSpinner"
+        android:layout_marginTop="10dp"
+        android:id="@+id/butt_DatosActuales"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
 
 </RelativeLayout>
