@@ -21,6 +21,10 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 //public class Main extends Activity {
 public class Main extends Activity implements Response.Listener<StringRequest>, Response.ErrorListener{
 
@@ -31,6 +35,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private String nombrePhp="";
     public static String respuestaPhp="";
     public static String respuestaPhpAnterior="";
+    public static String serieAnterior = "";
     public static String formateada = "";
     public static String serie;
     public static TextView TvMensajes;
@@ -51,6 +56,9 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     private static Button boton4;
     private static boolean encontreEquip;
     public static final String TAG = "Peticiónes queue a borrar";
+
+
+    //public final StringRequest stringRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,11 +84,9 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         boton1.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 //LO PRIMERO SERIA CONFIRMAR LA EXISTENCIA DEL USUARIO Y SU CLAVE
                 //Esto lo hace onClickOK()
                 existeUsu = onClickOk();
-
                 if(existeUsu){
                     boton2.setEnabled(true);
                 }
@@ -115,6 +121,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
                 //MOSTRAR LOS DATOS ACTUALES DEL EQUIPO
                 boton2.setEnabled(false);
                 BajoDatosActuales(serie);
+                //BajoDatosActuales(serie); //Duplico la orden para que lo haga solo
             }
         });
 
@@ -292,10 +299,9 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         //aqui debo armar la consulta con phpGet(reg, php)
         String reg = "dato=" + numTit;
         System.out.println("buscoEquiposAdmin() - registro: "+reg);
-        phpGet(reg, "buscoEquiposAdmin3.php");
-        String sb = respuestaPhp;
-        sb = respuestaPhp;
-        System.out.println("Respuesta de buscoEquiposAdmin3.php: "+respuestaPhp);
+        String sb = phpGet(reg, "buscoEquiposAdmin3.php");
+
+        System.out.println("Respuesta de buscoEquiposAdmin3.php: "+sb);
 
 
         ////////////////
@@ -323,10 +329,10 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         int numCar = 0;
         //aqui debo armar la consulta con phpGet(reg, php)
         String reg = "dato=" + numUsu;
-        phpGet(reg, "buscoEquiposUsu.php");
-        //sb = respuestaPhp;
+        String sb = phpGet(reg, "buscoEquiposUsu.php");
+
         System.out.println("Respuesta del buscoEquiposUsu.php: "+respuestaPhp.toString());
-        if(respuestaPhp!=null && !(respuestaPhp.toString().contains("false")) &&!(respuestaPhp.toString().contains("error"))){
+        if(respuestaPhp!=null && !(respuestaPhp.toString().contains("false")) && !(respuestaPhp.toString().contains("error"))){
             eq = obtengoLinEquip(respuestaPhp, d, numCar);
             nomEquip = new String[numEqEncontrados];
             serieEquip = new String[numEqEncontrados];
@@ -356,12 +362,10 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
             }else{
                 return false;
             }
-        }else{ //si es un administrador lo busco
-//            isAdminSist=true;
-            if(buscoAdmSist(usuario, clave)){
+        }
+        else{ //si es un administrador lo busco
+            isAdminSist=true;
                 return true;
-            }else
-                return false;
         }
     }
 
@@ -376,14 +380,13 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         //y la clave es correcta.
         boolean ret = false;
         String php = "buscoAdmSis.php";
-        //String clave = new String(pUf.passwClave.getPassword());
         String usuario = pUf;
-        //String usuario = pUf.txtUsuario.getText();
         String reg = "dato="+usuario+","+clave;
         String sbErr = "Error al buscar usuario y clave";
-        phpGet(reg, php);
-        String sb= respuestaPhp;
-        if(sb!=null){
+        String sb= phpGet(reg, php);
+
+        //if(sb!=null){
+        if(respuestaPhp.length()<1){
             sbErr = sb;
             //aqui debo obtener el nro de Admin del Sist
 //            String cad = sbUltReg.toString();
@@ -396,20 +399,16 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
             if(numTit>0){
                 ret=true;
                 String nom = "Bienvenido "+cad.substring(cad.indexOf("Nombre:")+8);
-                //pUf.jLabComentarios1.setText(nom);
-//            pUf.setVisible(false);
             }else if (numTit==0){
+                //ret = false;
                 sbErr = "ERROR: Usuario/clave no existen";
-                //pUf.jLabComentarios1.setText("ERROR: Usuario/clave no existen");
-//            pUf.jListNomUsu.setListData(sbErr);
             }else{
+                //ret = false;
                 sbErr = "ERROR: No se transmitieron bien los datos de usuario y clave";
-                //pUf.jLabComentarios1.setText("ERROR: No se transmitieron bien los datos de usuario y clave");
             }
         }else{
             sbErr = "ERROR: Sin Respuesta de la BD";
-            //pUf.jLabComentarios1.setText("ERROR: Sin Respuesta de la BD");
-//             pUf.jListNomUsu.setListData(sbErr);
+            //ret = false;
         }
         return ret;
     }
@@ -430,16 +429,17 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         String usuario = pUf;
         //String usuario = pUf.txtUsuario.getText();
         String reg = "dato="+usuario+","+clave;
+        String sb;
         phpGet(reg, php);
-        String sb = respuestaPhp;
+        sb = respuestaPhp;
         System.out.println();
         System.out.println("isAdmin - Respuesta de phpGet sb: "+sb+"  o respuestaPhp: "+respuestaPhp);
-        if (sb.length()>20) {
+        if (respuestaPhp.length()>20) {
             //sbErr = sb;
             //aqui debo obtener el nro de Admin del Sist
 //            String cad = sbUltReg.toString();
             //String cad = sbErr;
-            String cad = sb;
+            String cad = respuestaPhp;
             System.out.println("isAdmin()- Cadena recibida del php: " + cad);
             String num = cad.substring(cad.indexOf("Nro Admin Sist:") + 15, cad.indexOf('|')).trim();
             System.out.println("Numero extraido " + num);
@@ -518,6 +518,14 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         return ret;
     }
 
+    public static void delay(long ms){
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
 
     private void BajoDatosActuales (String serie){
         System.out.println("Entro a BajoDatosActuales()");
@@ -532,45 +540,52 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         String volts;
         //String tab;
         t = (TextView) findViewById(R.id.textView_Mensajes);
-        phpGet(reg,nombrePhp);
-        String respu = respuestaPhp;
-        Character tab=9;
-        //tab = getString(R.string.tab);
-        //String nombreAplicacion = getResources().getString(R.string.app_name);
-        //lectura = getResources().getString(R.string.respuesta);
-        //lectura += respuestaPhp;
-        //System.out.println(lectura);
-        System.out.println("Datos Actuales leidos: "+respu);
-        System.out.println("Posicion del caracter ';' es: "+respu.indexOf(';'));
-        if (respu.indexOf(';')<0 && respu.length() > 15 ) {
-            System.out.println("Los datos leidos son >15 chars y no tienen ';'");
-            formateada = "";
-            //fechaInst=respuestaPhp.substring(0, 17);
-            fechaInst=respuestaPhp.substring(0, 8);
-            //p4.jLabFechaHora.setText(fechaInst);
-            //p4.jTxtSerieEquipo.setText(serieEquipo);
+        String respu =phpGet(reg,nombrePhp);
+        System.out.println("respuestaPhp: "+ respuestaPhp+"   resp Anterior: "+respuestaPhpAnterior);
+        System.out.println("Serie: "+serie+"  Serie anterior: "+serieAnterior);
+        if(respuestaPhp.contains(respuestaPhpAnterior) && (!serie.contains(serieAnterior))){
+            //Si la respuesta es igual a la anterior pero no coincide la serie anterior con la actual
+            //hay que volver a pulsar el botón
+            formateada = "¡¡REINTENTE!!";
+            System.out.println(formateada);
+        }else {
+            serieAnterior = serie; //Esto es para que avise cuando se cambia de equipo
+            respuestaPhpAnterior = respuestaPhp;
+            Character tab = 9;
 
-            formateada += "\nFecha:" +tab + tab +tab + fechaInst + "\n"; //obtengo la fecha
-            hora = respuestaPhp.substring(9, 14);
-            formateada += "Hora:" +tab +tab + tab + tab + tab + hora + "\n"; //obtengo la hora
-            int posIni = respuestaPhp.indexOf(124, 18);
-            carga = respuestaPhp.substring(18, posIni);
-            formateada += "Carga:" +tab +tab + tab + tab + carga + " cm\n";
-            int posFin = respuestaPhp.indexOf(124, posIni + 1);
-            caudal = respuestaPhp.substring(posIni + 1, posFin);
-            formateada += "Caudal:" + tab +tab + caudal + " l/s\n";
-            posIni = posFin;
-            posFin = respuestaPhp.indexOf(124, posIni + 1);
-            volts = respuestaPhp.substring(posIni + 1, posFin);
-            formateada += "Bateria:" + tab +tab + volts+" V";
-        }else{
+            System.out.println("Datos Actuales leidos: " + respu);
+            System.out.println("Posicion del caracter ';' es: " + respu.indexOf(';'));
+            if (respu.indexOf(';') < 0 && respu.length() > 15) {
+                System.out.println("Los datos leidos son >15 chars y no tienen ';'");
+                formateada = "";
+                //fechaInst=respuestaPhp.substring(0, 17);
+                fechaInst = respu.substring(0, 8);
+                //p4.jLabFechaHora.setText(fechaInst);
+                //p4.jTxtSerieEquipo.setText(serieEquipo);
 
-            formateada = "";
-            if (respu.indexOf(';')>0)
-                formateada = "¡¡REINTENTE!!";
-            else
-                formateada = "¡Ese equipo no tiene registro de lectura actual!"
-                    + "\n\nRespuesta de la Web: "+respuestaPhp;
+                formateada += "\nFecha:" + tab + tab + tab + fechaInst + "\n"; //obtengo la fecha
+                hora = respu.substring(9, 14);
+                formateada += "Hora:" + tab + tab + tab + tab + tab + hora + "\n"; //obtengo la hora
+                int posIni = respu.indexOf(124, 18);
+                carga = respu.substring(18, posIni);
+                formateada += "Carga:" + tab + tab + tab + tab + carga + " cm\n";
+                int posFin = respu.indexOf(124, posIni + 1);
+                caudal = respu.substring(posIni + 1, posFin);
+                formateada += "Caudal:" + tab + tab + caudal + " l/s\n";
+                posIni = posFin;
+                posFin = respu.indexOf(124, posIni + 1);
+                volts = respu.substring(posIni + 1, posFin);
+                formateada += "Bateria:" + tab + tab + volts + " V";
+
+            } else {
+
+                formateada = "";
+                if (respu.indexOf(';') > 0)
+                    formateada = "¡¡REINTENTE!!";
+                else
+                    formateada = "¡Ese equipo no tiene registro de lectura actual!"
+                            + "\n\nRespuesta de la Web: " + respu;
+            }
         }
         //t.setText(respuestaPhp);
         t.setText("");
@@ -590,8 +605,8 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
     }
 
     private String phpGet(String reg, String php) {
-
         url = urlFija + php + "?" + reg;
+        System.out.println("url usada en el php "+php+" : "+url);
         int cuento=0;
         //Primero verifico si ha conexion a internet
         if (isNetworkConnected(getApplicationContext())) {
@@ -599,39 +614,41 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
         } else {
             System.out.println("No hay conexion a Internet");
         }
-        // Instantiate the RequestQueue.
+        // Instanciamos el RequestQueue.
+
         RequestQueue queue = Volley.newRequestQueue(this);
         StringRequest stringRequest;
-
-        // Request a string response from the provided URL.
-        stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    public void onResponse(String response) {
-                        Log.d("onResponse()", "La respuesta es: " + response);
-                        respuestaPhp = response;
-                    }
-
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.d("onErrorResponse()", "ERROR en GetPhp: " + error);
-                respuestaPhp = error.toString();
-            }
-        });
-//  Add the request to the RequestQueue.
-        //stringRequest.setTag(TAG);
-        queue.add(stringRequest);
-        //respuesta = respuestaPhp;
-            //cuento ++;
-
-
+            // Request a string response from the provided URL.
+            stringRequest = new StringRequest(Request.Method.GET, url,
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            Log.d("onResponse()", "La respuesta de phpGet es: " + response);
+                            respuestaPhp = response;
+                        }
+                    }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Log.d("onErrorResponse()", "ERROR en GetPhp: " + error);
+                    respuestaPhp = error.toString();
+                }
+            });
+            queue.add(stringRequest);
         System.out.println("Respuesta del php "+php+", variable respuestaPhp :"+respuestaPhp);
-
-        //stringRequest.cancel(); // esto es para probar a ver si deja de dar la respueta anterior
-
+        //respuestaPhpAnterior=respuestaPhp;
         return respuestaPhp;
     }
 
+
+    /*
+    @Override
+    protected void onStop () {
+        super.onStop();
+        if (queue != null) {
+            queue.cancelAll(TAG);
+        }
+    }
+    */
     @Override
     public void onErrorResponse(VolleyError error) {
         Log.d("onErrorResponse()", error.toString());
