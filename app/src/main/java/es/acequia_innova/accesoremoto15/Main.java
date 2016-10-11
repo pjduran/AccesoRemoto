@@ -629,6 +629,7 @@ public class Main extends Activity implements Response.Listener<StringRequest>, 
                 //p4.jLabFechaHora.setText(fechaInst);
                 //p4.jTxtSerieEquipo.setText(serieEquipo);
 
+
                 formateada += "Fecha:" + tab + tab + tab + fechaInst + "\n"; //obtengo la fecha
                 hora = respu.substring(9, 14);
                 formateada += "Hora:" + tab + tab + tab + tab + tab + hora + "\n"; //obtengo la hora
